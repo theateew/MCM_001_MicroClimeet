@@ -89,11 +89,7 @@
         </div>
         <div class="hero-visual">
             <div class="hero-product-card">
-                <div class="product-image-placeholder">
-                    <i class="fas fa-microchip"></i>
-                    <span>MicroClimeet</span>
-                </div>
-                <div class="product-badge">Coming Soon</div>
+                <img src="assets/images/homemicro.png" alt="MicroClimeet Logo" class="hero-logo-image">
             </div>
         </div>
     </div>
@@ -149,14 +145,13 @@
                 </div>
             </div>
             <div class="about-image">
-                <div class="about-image-placeholder">
-                    <i class="fas fa-seedling"></i>
-                    <span>Smart Greenhouse</span>
-                </div>
+                <!-- PERBAIKAN: Gambar About dengan ukuran pas -->
+                <img src="assets/images/microclimeet.png" alt="Smart Greenhouse" class="about-image-img">
             </div>
         </div>
     </div>
 </section>
+
     <!-- ===== PROBLEM ===== -->
     <section id="problem" class="problem">
         <div class="container">
@@ -566,9 +561,8 @@
             <div class="team-grid">
                 <div class="team-card">
                     <div class="team-image">
-                        <div class="team-img-placeholder">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <!-- PERBAIKAN: Foto Tim dengan ukuran pas -->
+                        <img src="assets/images/Rizal.png" alt="Muhammad Rizal Alfarisyi" class="team-photo">
                     </div>
                     <div class="team-info">
                         <h3>Muhammad Rizal Alfarisyi</h3>
@@ -577,9 +571,7 @@
                 </div>
                 <div class="team-card">
                     <div class="team-image">
-                        <div class="team-img-placeholder">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <img src="assets/images/rosyid.png" alt="Rosyid Hanafitri Utomo" class="team-photo">
                     </div>
                     <div class="team-info">
                         <h3>Rosyid Hanafitri Utomo</h3>
@@ -588,9 +580,7 @@
                 </div>
                 <div class="team-card">
                     <div class="team-image">
-                        <div class="team-img-placeholder">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <img src="assets/images/bitul.png" alt="Azzam Tsabitul Jamil" class="team-photo">
                     </div>
                     <div class="team-info">
                         <h3>Azzam Tsabitul Jamil</h3>
@@ -599,9 +589,7 @@
                 </div>
                 <div class="team-card">
                     <div class="team-image">
-                        <div class="team-img-placeholder">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <img src="assets/images/angger.png" alt="Anggertha Nurrosyid" class="team-photo">
                     </div>
                     <div class="team-info">
                         <h3>Anggertha Nurrosyid</h3>
@@ -610,9 +598,7 @@
                 </div>
                 <div class="team-card">
                     <div class="team-image">
-                        <div class="team-img-placeholder">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
+                        <img src="assets/images/arum.png" alt="Fathiika Arum Maulida" class="team-photo">
                     </div>
                     <div class="team-info">
                         <h3>Fathiika Arum Maulida</h3>
