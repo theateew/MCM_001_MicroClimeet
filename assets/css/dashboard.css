@@ -1,0 +1,477 @@
+/* Dashboard Layout Stylesheet - MicroClimeet */
+
+.dashboard-wrapper {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Collapsible Sidebar Navigation */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 80px; /* Collapsed width by default */
+  height: 100vh;
+  z-index: 100;
+  padding: 24px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+}
+
+/* Hover effect to expand the sidebar */
+.sidebar:hover {
+  width: 260px;
+  align-items: flex-start;
+  padding: 24px 20px;
+}
+
+/* Sidebar Brand Area */
+.sidebar-brand {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40px;
+  height: 46px;
+}
+
+.sidebar:hover .sidebar-brand {
+  justify-content: flex-start;
+}
+
+.sidebar-logo-full {
+  display: none;
+  height: 38px;
+  object-fit: contain;
+}
+
+.sidebar-logo-mini {
+  display: block;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Toggle visibility of logos on hover */
+.sidebar:hover .sidebar-logo-full {
+  display: block;
+}
+
+.sidebar:hover .sidebar-logo-mini {
+  display: none;
+}
+
+/* Navigation Links */
+.sidebar-menu {
+  list-style: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.sidebar-menu li {
+  width: 100%;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-family: var(--font-heading);
+  white-space: nowrap;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.sidebar-item i {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-item span {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+
+/* Hover states for sidebar item */
+.sidebar:hover .sidebar-item span {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-item:hover,
+.sidebar-item.active {
+  background: var(--white);
+  color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.08);
+}
+
+/* Sidebar Footer (Profile / Setting) */
+.sidebar-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.sidebar:hover .sidebar-footer {
+  align-items: flex-start;
+  padding-left: 12px;
+}
+
+.profile-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--glass-border);
+}
+
+.profile-info {
+  display: none;
+  flex-direction: column;
+}
+
+.sidebar:hover .profile-info {
+  display: flex;
+}
+
+.profile-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Main Dashboard Area */
+.main-content {
+  flex-grow: 1;
+  margin-left: 80px; /* Offset for collapsed sidebar */
+  padding: 32px 40px;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: calc(100vw - 80px);
+}
+
+/* When sidebar expands, shift main content slightly */
+.sidebar:hover ~ .main-content {
+  margin-left: 260px;
+  max-width: calc(100vw - 260px);
+}
+
+/* Top Dashboard Header */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.welcome-msg h2 {
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+}
+
+.welcome-msg p {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Status Indicator Pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-heading);
+}
+
+.status-pill .indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-pill.live {
+  background: rgba(74, 222, 128, 0.12);
+  color: #166534;
+  border: 1px solid rgba(74, 222, 128, 0.25);
+}
+
+.status-pill.live .indicator-dot {
+  background: var(--normal-color);
+  box-shadow: 0 0 8px var(--normal-color);
+  animation: pulse 2s infinite;
+}
+
+.status-pill.simulator {
+  background: rgba(235, 80, 17, 0.1);
+  color: #b83d0c;
+  border: 1px solid rgba(235, 80, 17, 0.18);
+}
+
+.status-pill.simulator .indicator-dot {
+  background: var(--accent-orange);
+  box-shadow: 0 0 8px var(--accent-orange);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+}
+
+/* Dashboard Content Grids */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Sensor Widget Cards */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.widget-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.widget-title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.widget-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.widget-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.widget-value-box {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.widget-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  font-family: var(--font-heading);
+}
+
+.widget-unit {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.widget-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.03);
+}
+
+.widget-btn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+
+/* Chart Widget Card */
+.chart-card {
+  width: 100%;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.chart-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-btn {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+  background: var(--accent-color);
+  color: var(--white);
+  border-color: var(--accent-color);
+}
+
+/* Modal Popup Calibration */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 9, 9, 0.35);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 420px;
+  animation: modalSlide 0.3s ease-out;
+}
+
+@keyframes modalSlide {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Dashboard */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px;
+    padding: 16px 8px;
+  }
+  .sidebar:hover {
+    width: 60px; /* Disable expansion on mobile sidebar */
+    padding: 16px 8px;
+  }
+  .sidebar-logo-full {
+    display: none !important;
+  }
+  .sidebar-logo-mini {
+    display: block !important;
+  }
+  .sidebar-item span {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 60px;
+    padding: 24px 16px;
+    max-width: calc(100vw - 60px);
+  }
+  .sidebar:hover ~ .main-content {
+    margin-left: 60px;
+    max-width: calc(100vw - 60px);
+  }
+  .telemetry-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
