@@ -54,10 +54,14 @@ include 'includes/header.php';
             <div class="hero-stat-badge"><i data-lucide="wifi" style="color: var(--accent-dark);"></i> Live Cloud Sync</div>
             <div class="hero-stat-badge"><i data-lucide="shield-alert" style="color: var(--accent-orange);"></i> Alert Otomatis</div>
         </div>
-    </div>
-    <div class="hero-image-container">
-        <div class="hero-image-wrapper">
-            <img src="assets/images/products/microclimeet.png" alt="MicroClimeet IoT Device" class="hero-img">
+        <div class="hero-visual">
+            <div class="hero-product-card">
+                <div class="product-image-placeholder">
+                    <i class="fas fa-microchip"></i>
+                    <span>MicroClimeet</span>
+                </div>
+                <div class="product-badge">Coming Soon</div>
+            </div>
         </div>
     </div>
 </header>
@@ -79,11 +83,30 @@ include 'includes/header.php';
                 </div>
                 <h3>Metode Manual Berisiko Tinggi</h3>
             </div>
-            <ul class="ps-list">
-                <li>
-                    <i data-lucide="x-circle" style="color: var(--danger-color);"></i>
-                    <div>
-                        <strong>Pemantauan Manual Lambat:</strong> Harus datang ke lokasi secara langsung untuk memeriksa kondisi suhu dan kelembaban.
+            <div class="about-image">
+                <div class="about-image-placeholder">
+                    <i class="fas fa-seedling"></i>
+                    <span>Smart Greenhouse</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+    <!-- ===== PROBLEM ===== -->
+    <section id="problem" class="problem">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Masalah</span>
+                <h2 class="section-title">Apa yang <span>Mengganggu</span> Petani?</h2>
+                <p class="section-desc">
+                    Berikut adalah tantangan utama yang sering dihadapi petani greenhouse 
+                    dalam menjaga kualitas tanaman premium.
+                </p>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">
+                        <i class="fas fa-hand"></i>
                     </div>
                 </li>
                 <li>
@@ -296,64 +319,72 @@ include 'includes/header.php';
                             </ul>
                             <a href="signup.php" class="btn btn-orange" style="align-self: flex-start;">Lihat System Alert</a>
                         </div>
-                        <div class="carousel-slide-visual">
-                            <div class="mockup-window">
-                                <div class="mockup-header">
-                                    <span class="mockup-dot red"></span>
-                                    <span class="mockup-dot yellow"></span>
-                                    <span class="mockup-dot green"></span>
-                                    <span class="mockup-address">microclimeet.com/petani/alerts</span>
-                                </div>
-                                <div class="mockup-body">
-                                    <div class="preview-mini-card" style="background: rgba(235, 80, 17, 0.1); border-color: rgba(235, 80, 17, 0.3); margin-bottom: 12px;">
-                                        <div style="display: flex; align-items: center; gap: 8px; color: #eb5011; font-weight: 700; font-size: 0.9rem;">
-                                            <i data-lucide="alert-triangle"></i> PERINGATAN WASPADA
-                                        </div>
-                                        <div style="font-size: 0.85rem; color: var(--text-primary); margin-top: 4px;">Suhu greenhouse mencapai 32.5°C (Melebihi ambang batas maks 30°C).</div>
-                                    </div>
-                                    <div class="preview-mini-card" style="background: rgba(255, 255, 255, 0.85);">
-                                        <div style="display: flex; align-items: center; gap: 8px; color: #55793a; font-weight: 700; font-size: 0.9rem;">
-                                            <i data-lucide="check-circle"></i> SENSOR LAINNYA AMAN
-                                        </div>
-                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">Kelembaban 72%, Kualitas Udara 15 AQI, UV 2.1.</div>
-                                    </div>
-                                </div>
-                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TEAM ===== -->
+    <section id="team" class="team">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Tim Kami</span>
+                <h2 class="section-title">Di Balik <span>MicroClimeet</span></h2>
+                <p class="section-desc">
+                    Kami adalah mahasiswa Universitas Sebelas Maret yang berkomitmen 
+                    menghadirkan solusi pertanian modern.
+                </p>
+            </div>
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-image">
+                        <div class="team-img-placeholder">
+                            <i class="fas fa-user-circle"></i>
                         </div>
                     </div>
-
-                    <!-- Slide 4: Admin Control -->
-                    <div class="carousel-slide">
-                        <div class="carousel-slide-content">
-                            <span class="carousel-badge" style="background: rgba(37, 99, 235, 0.12); color: #2563eb; border-color: rgba(37, 99, 235, 0.25);"><i data-lucide="shield-check"></i> Fitur 04</span>
-                            <h3 class="carousel-slide-title">Panel Admin & Threshold Control</h3>
-                            <p class="carousel-slide-desc">Pusat kendali admin untuk menyetujui registrasi petani baru, memantau log aktivitas pengguna, dan mengonfigurasi batas sensor global.</p>
-                            <ul class="carousel-feature-list">
-                                <li><i data-lucide="check-circle-2"></i> Approval registrasi petani satu klik</li>
-                                <li><i data-lucide="check-circle-2"></i> Log aktivitas audit trail pengguna</li>
-                                <li><i data-lucide="check-circle-2"></i> Kalibrasi threshold global terpusat</li>
-                            </ul>
-                            <a href="login.php" class="btn btn-secondary" style="align-self: flex-start;">Akses Login Admin</a>
+                    <div class="team-info">
+                        <h3>Muhammad Rizal Alfarisyi</h3>
+                        <p class="team-role">Ketua Tim / Penanggung Jawab</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-image">
+                        <div class="team-img-placeholder">
+                            <i class="fas fa-user-circle"></i>
                         </div>
-                        <div class="carousel-slide-visual">
-                            <div class="mockup-window">
-                                <div class="mockup-header">
-                                    <span class="mockup-dot red"></span>
-                                    <span class="mockup-dot yellow"></span>
-                                    <span class="mockup-dot green"></span>
-                                    <span class="mockup-address">microclimeet.com/admin/overview</span>
-                                </div>
-                                <div class="mockup-body">
-                                    <div class="preview-mini-card" style="margin-bottom: 8px;">
-                                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary);">Persetujuan Petani (2 Pending)</div>
-                                        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Pak Budi - b.sutrisno@gmail.com</div>
-                                    </div>
-                                    <div class="preview-mini-card">
-                                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary);">System Log Activity</div>
-                                        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Admin memperbarui threshold suhu max = 30.00°C</div>
-                                    </div>
-                                </div>
-                            </div>
+                    </div>
+                    <div class="team-info">
+                        <h3>Rosyid Hanafitri Utomo</h3>
+                        <p class="team-role">Divisi Perangkat Keras & Sensor</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-image">
+                        <div class="team-img-placeholder">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                    </div>
+                    <div class="team-info">
+                        <h3>Azzam Tsabitul Jamil</h3>
+                        <p class="team-role">Divisi Sistem Monitoring & Antarmuka</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-image">
+                        <div class="team-img-placeholder">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                    </div>
+                    <div class="team-info">
+                        <h3>Anggertha Nurrosyid</h3>
+                        <p class="team-role">Divisi Pemasaran & Kemitraan</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-image">
+                        <div class="team-img-placeholder">
+                            <i class="fas fa-user-circle"></i>
                         </div>
                     </div>
 
