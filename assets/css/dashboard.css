@@ -475,3 +475,33 @@
     justify-content: space-between;
   }
 }
+
+/* Dashboard Semi-Transparent Action Buttons (65%-68% Opacity) */
+.btn-primary, .btn-secondary, .btn-danger, .btn-outline {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary {
+  background: rgba(74, 222, 128, 0.68) !important; /* 68% Semi-transparent green */
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-primary:hover {
+  background: rgba(60, 207, 110, 0.88) !important;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.65) !important; /* 65% Semi-transparent white */
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.88) !important;
+  transform: translateY(-1px);
+}
+
