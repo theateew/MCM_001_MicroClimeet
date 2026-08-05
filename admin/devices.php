@@ -18,7 +18,51 @@ $message = $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
-    if ($action === 'update_device') {
+    if ($action === 'register_device') {
+        $deviceCode = trim($_POST['device_code'] ?? '');
+        $farmerId   = (int)($_POST['farmer_id'] ?? 0);
+
+        if (empty($deviceCode)) {
+            $error = "Kode Perangkat wajib diisi!";
+        } else {
+            try {
+                // Check if device_code already exists in devices
+                $c1 = $pdo->prepare("SELECT id FROM devices WHERE device_code = ?");
+                $c1->execute([$deviceCode]);
+                if ($c1->fetch()) {
+                    $error = "⚠️ Kode Perangkat '$deviceCode' sudah terdaftar di inventaris Admin!";
+                } else {
+                    $gh_id = null;
+                    if ($farmerId > 0) {
+                        $ghc = $pdo->prepare("SELECT id FROM greenhouses WHERE user_id = ? AND (device_code IS NULL OR device_code = '') LIMIT 1");
+                        $ghc->execute([$farmerId]);
+                        $gh_id = $ghc->fetchColumn();
+
+                        if ($gh_id) {
+                            $pdo->prepare("UPDATE greenhouses SET device_code = ?, status = 'active' WHERE id = ?")
+                                ->execute([$deviceCode, $gh_id]);
+                        } else {
+                            $pdo->prepare("INSERT INTO greenhouses (user_id, name, commodity, device_code, status) VALUES (?, 'Greenhouse Utama', 'Melon Premium', ?, 'active')")
+                                ->execute([$farmerId, $deviceCode]);
+                            $gh_id = $pdo->lastInsertId();
+                        }
+                    }
+
+                    $pdo->prepare("INSERT INTO devices (greenhouse_id, device_code, status, created_at) VALUES (?, ?, 'online', NOW())")
+                        ->execute([$gh_id ?: null, $deviceCode]);
+
+                    $log = $pdo->prepare("INSERT INTO activity_logs (user_id, activity) VALUES (?, ?)");
+                    $log->execute([$_SESSION['user_id'], "Admin mendaftarkan Kode Perangkat Hardware baru '$deviceCode'"]);
+
+                    $message = "Kode Perangkat '$deviceCode' berhasil didaftarkan ke inventaris!";
+                }
+            } catch (PDOException $e) {
+                $error = "Gagal mendaftarkan perangkat: " . $e->getMessage();
+            }
+        }
+    }
+
+    elseif ($action === 'update_device') {
         $id           = (int)$_POST['gh_id'];
         $device_code  = trim($_POST['device_code']  ?? '');
         $firebase_key = trim($_POST['firebase_key'] ?? '');
@@ -52,7 +96,7 @@ $statusFilter = $_GET['status'] ?? '';
 $farmerFilter = (int)($_GET['user_id'] ?? 0);
 $search       = trim($_GET['q'] ?? '');
 
-$conditions = ['1=1'];
+$conditions = ["g.device_code IS NOT NULL AND g.device_code != ''"];
 $params = [];
 if (in_array($statusFilter, ['active','inactive','warning'])) {
     $conditions[] = 'g.status = ?'; $params[] = $statusFilter;
@@ -80,9 +124,9 @@ $devices = $devStmt->fetchAll();
 // All farmers for filter
 $farmers = $pdo->query("SELECT id, name FROM users WHERE role='petani' ORDER BY name")->fetchAll();
 
-// Stats
+// Stats for active hardware devices only
 $statsStmt = $pdo->query(
-    "SELECT status, COUNT(*) AS cnt FROM greenhouses GROUP BY status"
+    "SELECT status, COUNT(*) AS cnt FROM greenhouses WHERE device_code IS NOT NULL AND device_code != '' GROUP BY status"
 );
 $statusStats = [];
 foreach ($statsStmt->fetchAll() as $r) { $statusStats[$r['status']] = $r['cnt']; }
@@ -93,11 +137,15 @@ include '../includes/header.php';
 <div class="dashboard-wrapper">
     <?php include '../includes/sidebar.php'; ?>
     <main class="main-content">
-        <div class="dashboard-header">
+        <div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
             <div class="welcome-msg">
-                <h2>🖥️ Kelola Perangkat</h2>
+                <h2><i data-lucide="cpu" style="color:#0D5D31;"></i> Kelola Perangkat</h2>
                 <p>Pantau dan kelola semua perangkat IoT greenhouse dari seluruh petani.</p>
             </div>
+            <button onclick="document.getElementById('modal-register-device').style.display='flex'" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:12px;font-weight:700;background:#0D5D31;color:#fff;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(13,93,49,0.25);">
+                <i data-lucide="plus-circle" style="width:18px;height:18px;"></i>
+                + Registrasi Perangkat IoT Baru
+            </button>
         </div>
 
         <?php if ($message): ?><div style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:12px;padding:12px 18px;margin-bottom:18px;color:#166534;display:flex;align-items:center;gap:10px;"><i data-lucide="check-circle" style="width:17px;height:17px;flex-shrink:0;"></i><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
@@ -240,6 +288,46 @@ include '../includes/header.php';
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
                 <button type="button" onclick="closeModal('modal-device-edit')" class="btn btn-secondary">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── MODAL: Registrasi Perangkat Baru (Manual Input) ────────────────────── -->
+<div id="modal-register-device" class="modal-overlay" style="display:none;" onclick="closeModal('modal-register-device')">
+    <div class="modal-box glass-card" style="max-width:480px;" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3><i data-lucide="cpu" style="width:20px;height:20px;color:#0D5D31;"></i> Registrasi Perangkat IoT Hardware</h3>
+            <button onclick="closeModal('modal-register-device')" class="modal-close">✕</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="action" value="register_device">
+            <div style="margin-bottom:14px;">
+                <label class="form-label">
+                    Kode Akses Perangkat Hardware <span style="color:#ef4444;">*</span>
+                </label>
+                <input type="text" name="device_code" required placeholder="mis. ESP32_GH_002 / MCM-2026-002" class="form-input"
+                       style="font-family:monospace;font-weight:700;font-size:0.95rem;">
+                <p style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">
+                    Masukkan Kode Seri Fisik yang diflash pada mikrokontroler ESP32.
+                </p>
+            </div>
+            <div style="margin-bottom:18px;">
+                <label class="form-label">
+                    Alokasikan Langsung ke Petani (Opsional)
+                </label>
+                <select name="farmer_id" class="form-input">
+                    <option value="0">-- Belum Dialokasikan (Petani Klaim Mandiri) --</option>
+                    <?php foreach ($farmers as $f): ?>
+                    <option value="<?php echo $f['id']; ?>"><?php echo htmlspecialchars($f['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button type="button" onclick="closeModal('modal-register-device')" class="btn btn-secondary">Batal</button>
+                <button type="submit" class="btn btn-primary" style="background:#0D5D31!important;color:#fff!important;font-weight:800;border:none;padding:10px 20px;border-radius:12px;cursor:pointer;">
+                    Simpan & Daftarkan Alat
+                </button>
             </div>
         </form>
     </div>

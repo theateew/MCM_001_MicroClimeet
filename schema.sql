@@ -49,5 +49,5 @@ ON DUPLICATE KEY UPDATE min_val=VALUES(min_val), max_val=VALUES(max_val);
 
 -- Seeding default admin account (email: admin@microclimeet.com, password: admin123)
 INSERT INTO users (name, email, password, phone, role, status) VALUES
-('Admin MicroClimeet', 'admin@microclimeet.com', '$2y$12$7bskA6r.V9oNbJrVTxRGP.k8M5aeT6taz/9ibZPzbr5TC4TIvHEBO', '081234567890', 'admin', 'active')
+('Admin MicroClimeet', 'admin@microclimeet.com', '$2y$12$7bskA6r.V9oNbJrVTxRGP.k8M5aeT6taz/9ibZPzbr5TC4TIvHEBO', '083829634058', 'admin', 'active')
 ON DUPLICATE KEY UPDATE name=VALUES(name), password=VALUES(password), status=VALUES(status);

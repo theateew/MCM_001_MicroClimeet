@@ -22,7 +22,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role']
     <!-- Brand Logo Area -->
     <div class="sidebar-brand">
         <a href="<?php echo $base; ?>index.php">
-            <img src="<?php echo $base; ?>assets/images/brand/logo.png" alt="MicroClimeet Logo" class="sidebar-logo-full">
+            <img src="<?php echo $base; ?>assets/images/brand/dashboard_logo.png" alt="MicroClimeet Logo" class="sidebar-logo-full">
             <img src="<?php echo $base; ?>assets/images/brand/mini_logo.png" alt="MicroClimeet Logo" class="sidebar-logo-mini">
         </a>
     </div>
@@ -36,7 +36,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role']
             <li>
                 <a href="<?php echo $base; ?>admin/index.php"
                    class="sidebar-item <?php echo $active === 'admin_dashboard' ? 'active' : ''; ?>">
-                    <i data-lucide="shield"></i>
+                    <i data-lucide="shield-check"></i>
                     <span>Overview Admin</span>
                 </a>
             </li>
@@ -60,7 +60,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role']
             <li>
                 <a href="<?php echo $base; ?>admin/thresholds.php"
                    class="sidebar-item <?php echo $active === 'admin_thresholds' ? 'active' : ''; ?>">
-                    <i data-lucide="sliders"></i>
+                    <i data-lucide="sliders-horizontal"></i>
                     <span>Konfigurasi Threshold</span>
                 </a>
             </li>
@@ -73,9 +73,10 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role']
                 </a>
             </li>
 
-            <li style="margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px;">
-                <a href="<?php echo $base; ?>petani/index.php" class="sidebar-item">
-                    <i data-lucide="layout-dashboard" style="color: var(--accent-color);"></i>
+            <li style="margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 16px;">
+                <a href="<?php echo $base; ?>admin/petani_dashboard.php"
+                   class="sidebar-item <?php echo $active === 'admin_petani_dashboard' ? 'active' : ''; ?>">
+                    <i data-lucide="layout-dashboard"></i>
                     <span>Dashboard Petani</span>
                 </a>
             </li>
@@ -128,7 +129,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role']
             </li>
 
             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-            <li style="margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px;">
+            <li style="margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 16px;">
                 <a href="<?php echo $base; ?>admin/index.php" class="sidebar-item">
                     <i data-lucide="shield-check" style="color: var(--accent-orange);"></i>
                     <span>Menu Admin Area</span>
@@ -144,9 +145,14 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role']
         <div style="display:flex; align-items:center; gap:12px; width:100%;">
             <div class="profile-avatar-wrapper">
                 <?php
-                $avatar = isset($_SESSION['photo']) && !empty($_SESSION['photo'])
-                    ? $base . 'assets/uploads/avatars/' . htmlspecialchars($_SESSION['photo'])
-                    : 'https://ui-avatars.com/api/?name=' . urlencode($_SESSION['name'] ?? 'U') . '&background=166534&color=fff&size=80';
+                $sess_photo = $_SESSION['photo'] ?? null;
+                if ($sess_photo && file_exists(__DIR__ . '/../' . $sess_photo)) {
+                    $avatar = $base . htmlspecialchars($sess_photo);
+                } elseif ($sess_photo && file_exists(__DIR__ . '/../assets/uploads/avatars/' . $sess_photo)) {
+                    $avatar = $base . 'assets/uploads/avatars/' . htmlspecialchars($sess_photo);
+                } else {
+                    $avatar = 'https://ui-avatars.com/api/?name=' . urlencode($_SESSION['name'] ?? 'U') . '&background=166534&color=fff&size=80';
+                }
                 ?>
                 <img src="<?php echo $avatar; ?>" alt="Avatar" class="profile-avatar">
             </div>

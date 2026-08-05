@@ -52,14 +52,13 @@ try {
 }
 
 // Fetch stats
-$stats = ['active_farmers' => 0, 'pending_farmers' => 0, 'total_logs' => 0];
+$stats = ['active_farmers' => 0, 'pending_farmers' => 0, 'total_devices' => 0, 'total_logs' => 0];
 try {
-    $stats['active_farmers'] = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'petani' AND status = 'active'")->fetchColumn();
+    $stats['active_farmers']  = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'petani' AND status = 'active'")->fetchColumn();
     $stats['pending_farmers'] = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'petani' AND status = 'inactive'")->fetchColumn();
-    $stats['total_logs'] = $pdo->query("SELECT COUNT(*) FROM activity_logs")->fetchColumn();
-} catch (PDOException $e) {
-    // Suppress stats error
-}
+    $stats['total_devices']   = $pdo->query("SELECT COUNT(*) FROM greenhouses WHERE device_code IS NOT NULL AND device_code != ''")->fetchColumn();
+    $stats['total_logs']      = $pdo->query("SELECT COUNT(*) FROM activity_logs")->fetchColumn();
+} catch (PDOException $e) {}
 
 include '../includes/header.php';
 ?>
@@ -76,39 +75,49 @@ include '../includes/header.php';
     <main class="main-content">
         <div class="dashboard-header">
             <div class="welcome-msg">
-                <h2>Panel Kontrol Admin</h2>
+                <h2><i data-lucide="shield-check" style="color:#0D5D31;"></i> Panel Kontrol Admin</h2>
                 <p>Kelola konfigurasi sistem global, setujui akun petani, dan pantau log aktivitas.</p>
             </div>
         </div>
         
         <!-- Stats Grid -->
-        <div class="telemetry-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 32px;">
+        <div class="telemetry-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 32px;">
             <div class="glass-card" style="display:flex; align-items:center; gap: 16px;">
-                <div class="widget-icon" style="background: rgba(114, 156, 81, 0.1); color: var(--accent-color); width: 48px; height: 48px;">
+                <div class="widget-icon" style="background: rgba(114, 156, 81, 0.12); color: var(--accent-color); width: 48px; height: 48px; border-radius: 14px;">
                     <i data-lucide="user-check"></i>
                 </div>
                 <div>
-                    <span style="display:block; font-size: 0.8rem; color: var(--text-secondary); text-transform:uppercase; font-weight:700;">Petani Aktif</span>
+                    <span style="display:block; font-size: 0.78rem; color: var(--text-secondary); text-transform:uppercase; font-weight:700;">Petani Aktif</span>
                     <strong style="font-size: 1.8rem; font-family: var(--font-heading);"><?php echo $stats['active_farmers']; ?></strong>
                 </div>
             </div>
             
             <div class="glass-card" style="display:flex; align-items:center; gap: 16px;">
-                <div class="widget-icon" style="background: rgba(235, 80, 17, 0.1); color: var(--accent-orange); width: 48px; height: 48px;">
+                <div class="widget-icon" style="background: rgba(235, 80, 17, 0.12); color: var(--accent-orange); width: 48px; height: 48px; border-radius: 14px;">
                     <i data-lucide="user-plus"></i>
                 </div>
                 <div>
-                    <span style="display:block; font-size: 0.8rem; color: var(--text-secondary); text-transform:uppercase; font-weight:700;">Menunggu Approval</span>
+                    <span style="display:block; font-size: 0.78rem; color: var(--text-secondary); text-transform:uppercase; font-weight:700;">Approval</span>
                     <strong style="font-size: 1.8rem; font-family: var(--font-heading);"><?php echo $stats['pending_farmers']; ?></strong>
+                </div>
+            </div>
+
+            <div class="glass-card" style="display:flex; align-items:center; gap: 16px;">
+                <div class="widget-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; width: 48px; height: 48px; border-radius: 14px;">
+                    <i data-lucide="cpu"></i>
+                </div>
+                <div>
+                    <span style="display:block; font-size: 0.78rem; color: var(--text-secondary); text-transform:uppercase; font-weight:700;">Total Perangkat</span>
+                    <strong style="font-size: 1.8rem; font-family: var(--font-heading);"><?php echo $stats['total_devices']; ?></strong>
                 </div>
             </div>
             
             <div class="glass-card" style="display:flex; align-items:center; gap: 16px;">
-                <div class="widget-icon" style="background: rgba(0, 0, 0, 0.05); color: var(--text-primary); width: 48px; height: 48px;">
+                <div class="widget-icon" style="background: rgba(0, 0, 0, 0.05); color: var(--text-primary); width: 48px; height: 48px; border-radius: 14px;">
                     <i data-lucide="activity"></i>
                 </div>
                 <div>
-                    <span style="display:block; font-size: 0.8rem; color: var(--text-secondary); text-transform:uppercase; font-weight:700;">Total Log</span>
+                    <span style="display:block; font-size: 0.78rem; color: var(--text-secondary); text-transform:uppercase; font-weight:700;">Total Log</span>
                     <strong style="font-size: 1.8rem; font-family: var(--font-heading);"><?php echo $stats['total_logs']; ?></strong>
                 </div>
             </div>
@@ -118,10 +127,27 @@ include '../includes/header.php';
             <!-- Left Column: Form Thresholds -->
             <div class="left-column">
                 <div class="glass-card">
-                    <h3 style="margin-bottom: 12px;"><i data-lucide="sliders" style="vertical-align: middle; margin-right: 8px; color: var(--accent-color);"></i> Ambang Batas Sensor Global</h3>
-                    <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 24px;">
+                    <!-- One-row Icon & Title Card Header (Req 4) -->
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                        <div style="width:40px; height:40px; border-radius:12px; background:rgba(13,93,49,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="sliders-horizontal" style="width:20px; height:20px; color:var(--accent-color);"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-family:var(--font-heading); font-size:1.08rem; font-weight:700; margin:0; color:var(--text-primary);">Ambang Batas Sensor Global</h3>
+                            <span style="font-size:0.78rem; color:var(--text-secondary);">Konfigurasi batas nilai ideal parameter mikroklimat default</span>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 20px; line-height:1.5;">
                         Tentukan rentang nilai ideal (minimum & maksimum) untuk masing-masing parameter. Sistem akan menandai status "NORMAL", "WASPADA", atau "BAHAYA" pada dashboard petani sesuai dengan rentang ini.
                     </p>
+
+                    <div style="margin-bottom:20px; padding:10px 14px; background:rgba(13,93,49,0.06); border-radius:12px; display:flex; align-items:center; justify-content:space-between;">
+                        <span style="font-size:0.83rem; font-weight:600; color:var(--accent-dark);">Ingin atur threshold khusus per-perangkat?</span>
+                        <a href="thresholds.php" class="btn btn-primary" style="font-size:0.78rem; padding:6px 14px; border-radius:10px;">
+                            <i data-lucide="settings-2" style="width:14px; height:14px; margin-right:4px;"></i> Kelola Per-Perangkat
+                        </a>
+                    </div>
                     
                     <?php if (!empty($message)): ?>
                         <div class="glass-card" style="background: rgba(114, 156, 81, 0.12); border-color: rgba(114, 156, 81, 0.25); color: #55793a; padding: 14px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem;">
@@ -203,7 +229,7 @@ include '../includes/header.php';
                         </div>
                         
                         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px; padding: 14px 20px;">
-                            <i data-lucide="save"></i> Terapkan Ambang Batas Baru
+                            <i data-lucide="save"></i> Terapkan Ambang Batas Global Baru
                         </button>
                     </form>
                 </div>
@@ -212,15 +238,29 @@ include '../includes/header.php';
             <!-- Right Column: Quick Links -->
             <div class="right-column">
                 <div class="glass-card">
-                    <h3 style="margin-bottom: 16px;"><i data-lucide="help-circle" style="vertical-align: middle; margin-right: 8px; color: var(--accent-orange);"></i> Bantuan Panel</h3>
+                    <!-- One-row Icon & Title Card Header (Req 4) -->
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                        <div style="width:40px; height:40px; border-radius:12px; background:rgba(235,80,17,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="help-circle" style="width:20px; height:20px; color:var(--accent-orange);"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-family:var(--font-heading); font-size:1.08rem; font-weight:700; margin:0; color:var(--text-primary);">Bantuan Panel</h3>
+                            <span style="font-size:0.78rem; color:var(--text-secondary);">Panduan navigasi administrator</span>
+                        </div>
+                    </div>
+
                     <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
                         Gunakan menu sebelah kiri untuk navigasi cepat:
                         <br><br>
                         1. <strong>Overview Admin</strong>: Mengelola ambang batas parameter sensor global.
                         <br>
-                        2. <strong>Approval Petani</strong>: Memberikan persetujuan (*approval*) petani baru agar mereka bisa masuk ke sistem.
+                        2. <strong>Manajemen Petani</strong>: Memberikan persetujuan (*approval*) dan mengelola akun petani.
                         <br>
-                        3. <strong>Log Aktivitas</strong>: Mengaudit seluruh kegiatan masuk/keluar sistem dan kalibrasi sensor.
+                        3. <strong>Kelola Perangkat</strong>: Menautkan kode perangkat ESP32 dan key Firebase.
+                        <br>
+                        4. <strong>Konfigurasi Threshold</strong>: Mengatur ambang batas spesifik per-perangkat petani.
+                        <br>
+                        5. <strong>Dashboard Petani</strong>: Memantau dan mengontrol tampilan live dashboard petani secara langsung.
                     </p>
                 </div>
             </div>

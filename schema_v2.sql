@@ -3,11 +3,16 @@
 -- Run this AFTER schema.sql (tables users, activity_logs, global_thresholds already exist)
 -- ============================================================
 
+-- 0. Update Tabel Users (Tambahkan foto profil)
+-- ALTER TABLE users ADD COLUMN photo VARCHAR(255) NULL AFTER phone;
+
+
 -- 4. Tabel Greenhouse / Perangkat IoT per Petani
 CREATE TABLE IF NOT EXISTS greenhouses (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     user_id      INT NOT NULL,
     name         VARCHAR(100) NOT NULL,
+    commodity    VARCHAR(100) NULL,           -- Komoditas budidaya (Melon Premium, Tomat Ceri, dll.)
     location     VARCHAR(255) NULL,           -- Alamat teks
     latitude     DECIMAL(10,8) NULL,          -- Koordinat GPS
     longitude    DECIMAL(11,8) NULL,

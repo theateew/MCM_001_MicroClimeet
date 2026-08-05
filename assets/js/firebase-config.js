@@ -4,13 +4,14 @@
  */
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    databaseURL: "YOUR_DATABASE_URL", // Required for Realtime Database
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAt_WIKnzhPRX_rU2u9MTcMAhjjT4FFkJ8",
+    authDomain: "microclimeet-7eff0.firebaseapp.com",
+    databaseURL: "https://microclimeet-7eff0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "microclimeet-7eff0",
+    storageBucket: "microclimeet-7eff0.firebasestorage.app",
+    messagingSenderId: "878725329807",
+    appId: "1:878725329807:web:765bcc80a7b5904f69d1fa",
+    measurementId: "G-EZ3QLWJMTX"
 };
 
 let firebaseActive = false;

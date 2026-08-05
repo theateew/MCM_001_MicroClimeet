@@ -2,6 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/config/database.php';
+
 $page_title = "Pantau Greenhouse Anda Secara Real-Time";
 $custom_css = ['landing.css'];
 $custom_js = ['carousel.js', 'animations.js'];
@@ -11,7 +13,50 @@ include 'includes/header.php';
 $is_logged_in = isset($_SESSION['user_id']);
 $user_name = $is_logged_in ? $_SESSION['name'] : '';
 $user_role = $is_logged_in ? $_SESSION['role'] : '';
-$dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.php';
+$dashboard_url = $is_logged_in
+    ? ($user_role === 'admin' ? 'admin/index.php' : 'petani/index.php')
+    : 'login.php';
+// Fetch Realtime Admin Metrics for Mini Dashboard Bar
+$live_total_petani = 0;
+$live_total_devices = 0;
+$commodity_counts = [
+    'Melon Premium' => 0,
+    'Paprika'       => 0,
+    'Tomat Ceri'    => 0,
+    'Stroberi'      => 0
+];
+
+try {
+    if (isset($pdo)) {
+        $live_total_petani = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'petani' AND status = 'active'")->fetchColumn();
+        $live_total_devices = (int)$pdo->query("SELECT COUNT(*) FROM greenhouses WHERE status = 'active'")->fetchColumn();
+
+        $c_stmt = $pdo->query("SELECT commodity, COUNT(*) as cnt FROM greenhouses WHERE status = 'active' GROUP BY commodity");
+        while ($row = $c_stmt->fetch()) {
+            $c_raw = trim($row['commodity']);
+            if (empty($c_raw)) {
+                $commodity_counts['Melon Premium'] += (int)$row['cnt'];
+                continue;
+            }
+            $matched = false;
+            foreach ($commodity_counts as $k => $v) {
+                if (strcasecmp($k, $c_raw) === 0) {
+                    $commodity_counts[$k] += (int)$row['cnt'];
+                    $matched = true;
+                    break;
+                }
+            }
+            if (!$matched) {
+                $commodity_counts[$c_raw] = (int)$row['cnt'];
+            }
+        }
+    }
+} catch (Exception $e) {
+    // Graceful fallback
+}
+
+// Include Ultra-Premium 3D Zero-Gravity Splash Screen (runs once per session on Landing Page)
+include 'includes/splash_screen.php';
 ?>
 
 <!-- Ambient Glowing Background Blobs -->
@@ -58,9 +103,21 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
     <!-- RIGHT: Actions (login / dashboard) -->
     <div class="nav-actions">
         <?php if ($is_logged_in): ?>
-            <a href="<?php echo $dashboard_url; ?>" class="btn btn-secondary nav-user-btn">
-                <i data-lucide="user"></i>
-                <span class="user-name-text"><?php echo htmlspecialchars($user_name); ?></span>
+            <?php
+            $nav_photo = $_SESSION['photo'] ?? null;
+            if ($nav_photo && file_exists(__DIR__ . '/' . $nav_photo)) {
+                $nav_avatar = htmlspecialchars($nav_photo);
+            } elseif ($nav_photo && file_exists(__DIR__ . '/assets/uploads/avatars/' . $nav_photo)) {
+                $nav_avatar = 'assets/uploads/avatars/' . htmlspecialchars($nav_photo);
+            } else {
+                $nav_avatar = 'https://ui-avatars.com/api/?name=' . urlencode($user_name) . '&background=166534&color=fff&size=80';
+            }
+            ?>
+            <a href="<?php echo $dashboard_url; ?>" class="btn btn-secondary nav-user-btn" style="display:inline-flex; align-items:center; gap:10px; padding:4px 16px 4px 6px; border-radius:30px;">
+                <div class="nav-avatar-wrapper" style="width:34px; height:34px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid #729C51; box-shadow:0 0 10px rgba(114, 156, 81, 0.4), 0 2px 6px rgba(0,0,0,0.12);">
+                    <img src="<?php echo $nav_avatar; ?>" alt="<?php echo htmlspecialchars($user_name); ?>" style="width:100%; height:100%; object-fit:cover; display:block;">
+                </div>
+                <span class="user-name-text" style="font-weight:600; font-size:0.88rem;"><?php echo htmlspecialchars($user_name); ?></span>
             </a>
             <a href="<?php echo $dashboard_url; ?>" class="btn btn-primary nav-dashboard-btn">
                 <span>Dashboard</span> <i data-lucide="arrow-right"></i>
@@ -96,7 +153,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                         Beli Langganan <i data-lucide="arrow-right"></i>
                     </a>
                 <?php endif; ?>
-                <a href="https://wa.me/6281234567890?text=Halo%20Admin%20MicroClimeet,%20saya%20tertarik%20dengan%20produk%20ini." target="_blank" class="btn btn-secondary">
+                <a href="https://wa.me/6283829634058?text=Halo%20Admin%20MicroClimeet,%20saya%20tertarik%20dengan%20produk%20ini." target="_blank" class="btn btn-secondary">
                     <i data-lucide="message-circle"></i> Hubungi WhatsApp
                 </a>
             </div>
@@ -142,6 +199,156 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
     </div>
 </section>
 
+<!-- Mini Realtime Monitoring Dashboard Section (Data Live Sync dari Dashboard Admin) -->
+<section id="mini-realtime-dashboard" class="section-wrapper reveal" style="padding-top: 10px; padding-bottom: 30px;">
+    <!-- Section Header (Konsisten dengan Typography & Style Bagian Lain) -->
+    <div class="section-header text-center" style="margin-bottom: 28px;">
+        <span class="section-tag"><i data-lucide="activity"></i> Dashboard Mini</span>
+        <h2 class="section-title">Monitoring Realtime <em>Ekosistem</em></h2>
+        <p class="section-desc">Statistik aktif petani terdaftar dan jaringan perangkat IoT yang terhubung secara live dengan Database Server MicroClimeet.</p>
+    </div>
+    <!-- Main Outer Container Card -->
+    <div class="glass-card" style="padding: 32px; border-radius: var(--radius-xl); background: rgba(255, 255, 255, 0.96); box-shadow: 0 16px 40px rgba(0,0,0,0.06); border: 1.5px solid rgba(13,93,49,0.18);">
+
+        <!-- Metric Cards Grid (Gaya Modern Dashboard Sesuai Gambar Referensi) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;">
+
+            <!-- Card 1: Total Petani -->
+            <div style="position: relative; background: #ffffff; border-radius: 18px; padding: 18px 20px; border: 1px solid rgba(13,93,49,0.15); box-shadow: 0 4px 18px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                <!-- Left Vertical Color Bar -->
+                <div style="position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: #0D5D31;"></div>
+
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; padding-left: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #475569; font-family: var(--font-main);">Total Petani</span>
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(13, 93, 49, 0.12); color: #0D5D31; display: flex; align-items: center; justify-content: center;">
+                        <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+                    </div>
+                </div>
+
+                <div style="padding-left: 6px;">
+                    <div style="font-size: 1.85rem; font-weight: 900; font-family: var(--font-heading); color: #0f172a; line-height: 1; margin-bottom: 4px;">
+                        <?php echo $live_total_petani; ?>
+                    </div>
+                    <div style="font-size: 0.76rem; font-weight: 600; color: #64748b;">
+                        Petani Terverifikasi
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Total Perangkat -->
+            <div style="position: relative; background: #ffffff; border-radius: 18px; padding: 18px 20px; border: 1px solid rgba(2,132,199,0.18); box-shadow: 0 4px 18px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                <!-- Left Vertical Color Bar -->
+                <div style="position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: #0284c7;"></div>
+
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; padding-left: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #475569; font-family: var(--font-main);">Total Perangkat</span>
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center;">
+                        <i data-lucide="cpu" style="width: 18px; height: 18px;"></i>
+                    </div>
+                </div>
+
+                <div style="padding-left: 6px;">
+                    <div style="font-size: 1.85rem; font-weight: 900; font-family: var(--font-heading); color: #0f172a; line-height: 1; margin-bottom: 4px;">
+                        <?php echo $live_total_devices; ?>
+                    </div>
+                    <div style="font-size: 0.76rem; font-weight: 600; color: #64748b;">
+                        Greenhouse Aktif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Melon Premium -->
+            <div style="position: relative; background: #ffffff; border-radius: 18px; padding: 18px 20px; border: 1px solid rgba(22,163,74,0.18); box-shadow: 0 4px 18px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                <!-- Left Vertical Color Bar -->
+                <div style="position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: #16a34a;"></div>
+
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; padding-left: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #475569; font-family: var(--font-main);">Melon Premium</span>
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(22, 163, 74, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                        🍈
+                    </div>
+                </div>
+
+                <div style="padding-left: 6px;">
+                    <div style="font-size: 1.85rem; font-weight: 900; font-family: var(--font-heading); color: #0f172a; line-height: 1; margin-bottom: 4px;">
+                        <?php echo $commodity_counts['Melon Premium'] ?? 0; ?>
+                    </div>
+                    <div style="font-size: 0.76rem; font-weight: 600; color: #64748b;">
+                        Perangkat Terhubung
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Paprika -->
+            <div style="position: relative; background: #ffffff; border-radius: 18px; padding: 18px 20px; border: 1px solid rgba(220,38,38,0.18); box-shadow: 0 4px 18px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                <!-- Left Vertical Color Bar -->
+                <div style="position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: #dc2626;"></div>
+
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; padding-left: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #475569; font-family: var(--font-main);">Paprika</span>
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(220, 38, 38, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                        🫑
+                    </div>
+                </div>
+
+                <div style="padding-left: 6px;">
+                    <div style="font-size: 1.85rem; font-weight: 900; font-family: var(--font-heading); color: #0f172a; line-height: 1; margin-bottom: 4px;">
+                        <?php echo $commodity_counts['Paprika'] ?? 0; ?>
+                    </div>
+                    <div style="font-size: 0.76rem; font-weight: 600; color: #64748b;">
+                        Perangkat Terhubung
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 5: Tomat Ceri -->
+            <div style="position: relative; background: #ffffff; border-radius: 18px; padding: 18px 20px; border: 1px solid rgba(217,119,6,0.18); box-shadow: 0 4px 18px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                <!-- Left Vertical Color Bar -->
+                <div style="position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: #d97706;"></div>
+
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; padding-left: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #475569; font-family: var(--font-main);">Tomat Ceri</span>
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(217, 119, 6, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                        🍅
+                    </div>
+                </div>
+
+                <div style="padding-left: 6px;">
+                    <div style="font-size: 1.85rem; font-weight: 900; font-family: var(--font-heading); color: #0f172a; line-height: 1; margin-bottom: 4px;">
+                        <?php echo $commodity_counts['Tomat Ceri'] ?? 0; ?>
+                    </div>
+                    <div style="font-size: 0.76rem; font-weight: 600; color: #64748b;">
+                        Perangkat Terhubung
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 6: Stroberi -->
+            <div style="position: relative; background: #ffffff; border-radius: 18px; padding: 18px 20px; border: 1px solid rgba(147,51,234,0.18); box-shadow: 0 4px 18px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                <!-- Left Vertical Color Bar -->
+                <div style="position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: #9333ea;"></div>
+
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; padding-left: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #475569; font-family: var(--font-main);">Stroberi</span>
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(147, 51, 234, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                        🍓
+                    </div>
+                </div>
+
+                <div style="padding-left: 6px;">
+                    <div style="font-size: 1.85rem; font-weight: 900; font-family: var(--font-heading); color: #0f172a; line-height: 1; margin-bottom: 4px;">
+                        <?php echo $commodity_counts['Stroberi'] ?? 0; ?>
+                    </div>
+                    <div style="font-size: 0.76rem; font-weight: 600; color: #64748b;">
+                        Perangkat Terhubung
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
 <!-- Problem & Solution Section -->
 <section id="fitur" class="section-wrapper reveal">
     <div class="section-header">
@@ -149,7 +356,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
         <h2 class="section-title">Mengapa Menggunakan <em>MicroClimeet?</em></h2>
         <p class="section-desc">Budidaya tanaman premium (melon premium, tomat ceri, paprika, stroberi) membutuhkan stabilitas lingkungan yang mutlak untuk menjaga kualitas panen.</p>
     </div>
-    
+
     <div class="problems-solutions-grid">
         <!-- Problems Card -->
         <div class="ps-card problems-box">
@@ -299,7 +506,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                 <li><i data-lucide="shield-check" style="color: var(--accent-color);"></i> Casing kokoh hasil 3D Print pelindung cuaca</li>
             </ul>
         </div>
-        
+
         <div class="sensors-grid">
             <!-- Sensor 1: Suhu Udara -->
             <div class="glass-card sensor-card p-6 rounded-2xl flex flex-col relative overflow-hidden transition-all duration-500 cursor-pointer">
@@ -310,7 +517,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     <span class="sensor-chip-tag text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30">BME680</span>
                 </div>
                 <h4 class="sensor-name font-extrabold text-base md:text-lg text-emerald-950 mb-1.5">Suhu Udara</h4>
-                
+
                 <!-- Sensor Image (above description) -->
                 <div class="sensor-img-box w-full relative flex items-center justify-center transition-all duration-500">
                     <div class="sensor-glow absolute w-28 h-28 bg-emerald-400/30 rounded-full blur-xl transition-all duration-500"></div>
@@ -321,7 +528,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     Sensor presisi BME680 membaca suhu untuk menjaga kestabilan iklim mikro.
                 </p>
             </div>
-            
+
             <!-- Sensor 2: Kelembapan -->
             <div class="glass-card sensor-card p-6 rounded-2xl flex flex-col relative overflow-hidden transition-all duration-500 cursor-pointer">
                 <div class="sensor-header-row flex items-center justify-between mb-3">
@@ -331,7 +538,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     <span class="sensor-chip-tag text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30">BME680</span>
                 </div>
                 <h4 class="sensor-name font-extrabold text-base md:text-lg text-emerald-950 mb-1.5">Kelembapan</h4>
-                
+
                 <!-- Sensor Image (above description) -->
                 <div class="sensor-img-box w-full relative flex items-center justify-center transition-all duration-500">
                     <div class="sensor-glow absolute w-28 h-28 bg-emerald-400/30 rounded-full blur-xl transition-all duration-500"></div>
@@ -342,7 +549,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     Memantau tingkat kelembapan relatif (% RH) guna mencegah jamur & dehidrasi.
                 </p>
             </div>
-            
+
             <!-- Sensor 3: Kualitas Udara -->
             <div class="glass-card sensor-card p-6 rounded-2xl flex flex-col relative overflow-hidden transition-all duration-500 cursor-pointer">
                 <div class="sensor-header-row flex items-center justify-between mb-3">
@@ -352,7 +559,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     <span class="sensor-chip-tag text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30">PMS5003</span>
                 </div>
                 <h4 class="sensor-name font-extrabold text-base md:text-lg text-emerald-950 mb-1.5">Kualitas Udara</h4>
-                
+
                 <!-- Sensor Image (above description) -->
                 <div class="sensor-img-box w-full relative flex items-center justify-center transition-all duration-500">
                     <div class="sensor-glow absolute w-28 h-28 bg-emerald-400/30 rounded-full blur-xl transition-all duration-500"></div>
@@ -363,7 +570,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     Sensor PMS5003 membaca partikulat debu/asap untuk kesehatan aerasi tanaman.
                 </p>
             </div>
-            
+
             <!-- Sensor 4: Indeks UV -->
             <div class="glass-card sensor-card p-6 rounded-2xl flex flex-col relative overflow-hidden transition-all duration-500 cursor-pointer">
                 <div class="sensor-header-row flex items-center justify-between mb-3">
@@ -373,7 +580,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     <span class="sensor-chip-tag text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30">GUVA-S12SD</span>
                 </div>
                 <h4 class="sensor-name font-extrabold text-base md:text-lg text-emerald-950 mb-1.5">Indeks UV</h4>
-                
+
                 <!-- Sensor Image (above description) -->
                 <div class="sensor-img-box w-full relative flex items-center justify-center transition-all duration-500">
                     <div class="sensor-glow absolute w-28 h-28 bg-emerald-400/30 rounded-full blur-xl transition-all duration-500"></div>
@@ -400,17 +607,17 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
         <div class="glass-carousel">
             <div class="carousel-track-container">
                 <div class="carousel-track">
-                    
-                    <!-- Slide 1: Live Monitoring -->
+
+                    <!-- Slide 1: Live Monitoring Sensor (Real Petani Dashboard Replica) -->
                     <div class="carousel-slide active">
                         <div class="carousel-slide-content">
                             <span class="carousel-badge"><i data-lucide="activity"></i> Fitur 01</span>
                             <h3 class="carousel-slide-title">Dashboard Live Telemetri Sensor</h3>
-                            <p class="carousel-slide-desc">Pantau 4 parameter mikro utama (Suhu, Kelembaban, Kualitas Udara, UV) secara instan melalui kartu widget glassmorphic yang responsif.</p>
+                            <p class="carousel-slide-desc">Pantau 4 parameter mikro utama (Suhu, Kelembaban, Kualitas Udara, UV) secara instan melalui kartu widget glassmorphic yang responsif dan terhubung ke IoT ESP32.</p>
                             <ul class="carousel-feature-list">
                                 <li><i data-lucide="check-circle-2"></i> Update data real-time tanpa reload halaman</li>
-                                <li><i data-lucide="check-circle-2"></i> Visual indikator status (Normal / Waspada / Bahaya)</li>
-                                <li><i data-lucide="check-circle-2"></i> Tampilan ultra-clean di mobile & desktop</li>
+                                <li><i data-lucide="check-circle-2"></i> Indikator status presisi (Optimal / Waspada / Kritis)</li>
+                                <li><i data-lucide="check-circle-2"></i> Tampilan ultra-clean di mobile &amp; desktop</li>
                             </ul>
                             <a href="signup.php" class="btn btn-primary" style="align-self: flex-start;">Uji Coba Demo Live</a>
                         </div>
@@ -420,29 +627,67 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                                     <span class="mockup-dot red"></span>
                                     <span class="mockup-dot yellow"></span>
                                     <span class="mockup-dot green"></span>
-                                    <span class="mockup-address">microclimeet.com/petani/dashboard</span>
+                                    <span class="mockup-address">microclimeet.com/petani/index.php</span>
                                 </div>
-                                <div class="mockup-body">
-                                    <div class="preview-widget-grid">
-                                        <div class="preview-mini-card">
-                                            <div class="preview-card-title">Suhu Udara</div>
-                                            <div class="preview-card-val">27.4 °C</div>
-                                            <span class="preview-card-status status-normal">● Optimal</span>
+                                <div class="mockup-body" style="background:#f8faf8;padding:16px;">
+                                    <!-- Mini Topbar Replica -->
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,0.06);">
+                                        <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:700;color:#0D5D31;">
+                                            <i class="bi bi-house-door-fill" style="color:#0D5D31;"></i> MCM_001_PTIK (ESP32_GH_001)
                                         </div>
-                                        <div class="preview-mini-card">
-                                            <div class="preview-card-title">Kelembapan</div>
-                                            <div class="preview-card-val">76.2 %</div>
-                                            <span class="preview-card-status status-normal">● Ideal</span>
+                                        <span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(34,197,94,0.12);color:#15803d;border:1px solid rgba(34,197,94,0.3);display:inline-flex;align-items:center;gap:4px;">
+                                            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;"></span> Terhubung Live
+                                        </span>
+                                    </div>
+                                    <!-- 4 Widget Cards Grid (Real Replica) -->
+                                    <div class="preview-widget-grid" style="grid-template-columns:repeat(2,1fr);gap:10px;">
+                                        <!-- Suhu Udara -->
+                                        <div class="preview-mini-card" style="background:#fff;border-radius:12px;padding:12px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <span style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Suhu Udara</span>
+                                                <i data-lucide="thermometer" style="width:13px;height:13px;color:#0D5D31;"></i>
+                                            </div>
+                                            <div style="font-size:1.3rem;font-weight:800;color:#0D5D31;line-height:1;">26.9 <span style="font-size:0.72rem;font-weight:600;">°C</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:0.68rem;">
+                                                <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:1px 6px;border-radius:8px;font-weight:700;">OPTIMAL</span>
+                                                <span style="color:var(--text-secondary);">Target: 20–30°C</span>
+                                            </div>
                                         </div>
-                                        <div class="preview-mini-card">
-                                            <div class="preview-card-title">Air Quality</div>
-                                            <div class="preview-card-val">18 AQI</div>
-                                            <span class="preview-card-status status-normal">● Bersih</span>
+                                        <!-- Kelembapan -->
+                                        <div class="preview-mini-card" style="background:#fff;border-radius:12px;padding:12px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <span style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Kelembapan</span>
+                                                <i data-lucide="droplets" style="width:13px;height:13px;color:#0284c7;"></i>
+                                            </div>
+                                            <div style="font-size:1.3rem;font-weight:800;color:#0284c7;line-height:1;">65.8 <span style="font-size:0.72rem;font-weight:600;">% RH</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:0.68rem;">
+                                                <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:1px 6px;border-radius:8px;font-weight:700;">OPTIMAL</span>
+                                                <span style="color:var(--text-secondary);">Target: 60–85%</span>
+                                            </div>
                                         </div>
-                                        <div class="preview-mini-card">
-                                            <div class="preview-card-title">Indeks UV</div>
-                                            <div class="preview-card-val">3.2 UV</div>
-                                            <span class="preview-card-status status-normal">● Aman</span>
+                                        <!-- Kualitas Udara -->
+                                        <div class="preview-mini-card" style="background:#fff;border-radius:12px;padding:12px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <span style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Kualitas Udara</span>
+                                                <i data-lucide="wind" style="width:13px;height:13px;color:#16a34a;"></i>
+                                            </div>
+                                            <div style="font-size:1.3rem;font-weight:800;color:#16a34a;line-height:1;">35 <span style="font-size:0.72rem;font-weight:600;">PM2.5</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:0.68rem;">
+                                                <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:1px 6px;border-radius:8px;font-weight:700;">OPTIMAL</span>
+                                                <span style="color:var(--text-secondary);">Target: 0–40 PM2.5</span>
+                                            </div>
+                                        </div>
+                                        <!-- Indeks UV -->
+                                        <div class="preview-mini-card" style="background:#fef2f2;border-radius:12px;padding:12px;border:1.5px solid #fca5a5;box-shadow:0 2px 6px rgba(239,68,68,0.08);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <span style="font-size:0.7rem;font-weight:700;color:#991b1b;text-transform:uppercase;">Indeks UV</span>
+                                                <i data-lucide="sun" style="width:13px;height:13px;color:#dc2626;"></i>
+                                            </div>
+                                            <div style="font-size:1.3rem;font-weight:800;color:#dc2626;line-height:1;">10.8 <span style="font-size:0.72rem;font-weight:600;">UV Index</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:0.68rem;">
+                                                <span style="background:rgba(239,68,68,0.15);color:#b91c1c;padding:1px 6px;border-radius:8px;font-weight:700;">KRITIS</span>
+                                                <span style="color:#7f1d1d;">Target: 0–5 UV</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -450,15 +695,67 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                         </div>
                     </div>
 
-                    <!-- Slide 2: ApexCharts Analytics -->
+                    <!-- Slide 2: Timeline Siklus Tanam & Fase Pertumbuhan (FITUR BARU) -->
                     <div class="carousel-slide">
                         <div class="carousel-slide-content">
-                            <span class="carousel-badge"><i data-lucide="trending-up"></i> Fitur 02</span>
+                            <span class="carousel-badge" style="background:rgba(13,93,49,0.12);color:#0D5D31;border-color:rgba(13,93,49,0.25);"><i data-lucide="sprout"></i> Fitur 02</span>
+                            <h3 class="carousel-slide-title">Timeline Siklus Tanam Presisi</h3>
+                            <p class="carousel-slide-desc">Pelacakan fase budidaya tanaman (Penyemaian, Vegetatif, Generatif, Panen) secara proposional lengkap dengan hitung tanggal panen otomatis.</p>
+                            <ul class="carousel-feature-list">
+                                <li><i data-lucide="check-circle-2"></i> Sinkronisasi dua arah real-time Admin &amp; Petani</li>
+                                <li><i data-lucide="check-circle-2"></i> Indikator progress bar fase pertumbuhan otomatis</li>
+                                <li><i data-lucide="check-circle-2"></i> Preset komoditas (Melon Premium, Tomat Ceri, Paprika, dll.)</li>
+                            </ul>
+                            <a href="signup.php" class="btn btn-primary" style="align-self: flex-start;">Kelola Siklus Tanam</a>
+                        </div>
+                        <div class="carousel-slide-visual">
+                            <div class="mockup-window">
+                                <div class="mockup-header">
+                                    <span class="mockup-dot red"></span>
+                                    <span class="mockup-dot yellow"></span>
+                                    <span class="mockup-dot green"></span>
+                                    <span class="mockup-address">microclimeet.com/petani/crop-cycle</span>
+                                </div>
+                                <div class="mockup-body" style="background:#f8faf8;padding:16px;">
+                                    <div style="background:#fff;border-radius:14px;padding:16px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                            <div>
+                                                <h4 style="font-family:var(--font-heading);font-weight:800;font-size:0.95rem;color:#0D5D31;margin:0;">Melon Premium (Inthanon)</h4>
+                                                <p style="font-size:0.75rem;color:var(--text-secondary);margin:2px 0 0 0;">Fase Vegetatif II — Hari ke-35 dari 75 Hari Target</p>
+                                            </div>
+                                            <span style="font-size:0.75rem;font-weight:800;color:#0D5D31;background:rgba(13,93,49,0.1);padding:4px 10px;border-radius:20px;">46.6%</span>
+                                        </div>
+                                        <!-- Progress bar -->
+                                        <div style="height:8px;width:100%;background:#e2e8f0;border-radius:10px;overflow:hidden;margin:10px 0;">
+                                            <div style="height:100%;width:46.6%;background:linear-gradient(90deg, #10b981, #0D5D31);border-radius:10px;"></div>
+                                        </div>
+                                        <!-- Phase milestone grid -->
+                                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;text-align:center;font-size:0.68rem;">
+                                            <div style="background:#dcfce7;color:#15803d;padding:6px;border-radius:8px;font-weight:700;">01. Semai ✓</div>
+                                            <div style="background:#0D5D31;color:#fff;padding:6px;border-radius:8px;font-weight:700;">02. Vegetatif ▶</div>
+                                            <div style="background:#f1f5f9;color:#64748b;padding:6px;border-radius:8px;font-weight:600;">03. Generatif</div>
+                                            <div style="background:#f1f5f9;color:#64748b;padding:6px;border-radius:8px;font-weight:600;">04. Panen</div>
+                                        </div>
+                                        <!-- Date details -->
+                                        <div style="margin-top:12px;padding-top:8px;border-top:1px dashed rgba(0,0,0,0.1);display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-secondary);">
+                                            <span><strong>Tanam:</strong> Kamis, 26 Jun 2026</span>
+                                            <span><strong>Panen:</strong> Rabu, 09 Sep 2026</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3: ApexCharts Analytics -->
+                    <div class="carousel-slide">
+                        <div class="carousel-slide-content">
+                            <span class="carousel-badge" style="background:rgba(2,132,199,0.12);color:#0284c7;border-color:rgba(2,132,199,0.25);"><i data-lucide="trending-up"></i> Fitur 03</span>
                             <h3 class="carousel-slide-title">Grafik Analisis Tren Historis</h3>
                             <p class="carousel-slide-desc">Visualisasi grafik tren interaktif berbasis ApexCharts yang memudahkan evaluasi fluktuasi iklim mikro harian hingga mingguan.</p>
                             <ul class="carousel-feature-list">
-                                <li><i data-lucide="check-circle-2"></i> Mode kurva halus & tooltip data presisi</li>
-                                <li><i data-lucide="check-circle-2"></i> Zooming interaktif dan analisis riwayat</li>
+                                <li><i data-lucide="check-circle-2"></i> Mode kurva halus &amp; tooltip data presisi</li>
+                                <li><i data-lucide="check-circle-2"></i> Filter interval waktu harian, mingguan, &amp; bulanan</li>
                                 <li><i data-lucide="check-circle-2"></i> Penandaan batas ambang (*threshold*) ideal</li>
                             </ul>
                             <a href="signup.php" class="btn btn-primary" style="align-self: flex-start;">Pelajari Analytics</a>
@@ -469,31 +766,59 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                                     <span class="mockup-dot red"></span>
                                     <span class="mockup-dot yellow"></span>
                                     <span class="mockup-dot green"></span>
-                                    <span class="mockup-address">microclimeet.com/petani/analytics</span>
+                                    <span class="mockup-address">microclimeet.com/petani/history.php</span>
                                 </div>
-                                <div class="mockup-body" style="background: #ffffff; padding: 16px; text-align: center;">
-                                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Tren Suhu & Kelembapan (24 Jam)</div>
-                                    <div style="height: 140px; width: 100%; border-bottom: 2px solid var(--accent-color); border-left: 2px solid var(--text-secondary); display: flex; align-items: flex-end; justify-content: space-around; padding: 10px 0;">
-                                        <div style="height: 40%; width: 12%; background: rgba(114, 156, 81, 0.4); border-radius: 4px 4px 0 0;"></div>
-                                        <div style="height: 65%; width: 12%; background: rgba(114, 156, 81, 0.6); border-radius: 4px 4px 0 0;"></div>
-                                        <div style="height: 85%; width: 12%; background: var(--accent-color); border-radius: 4px 4px 0 0;"></div>
-                                        <div style="height: 55%; width: 12%; background: rgba(114, 156, 81, 0.5); border-radius: 4px 4px 0 0;"></div>
-                                        <div style="height: 70%; width: 12%; background: rgba(114, 156, 81, 0.7); border-radius: 4px 4px 0 0;"></div>
+                                <div class="mockup-body" style="background:#fff;padding:16px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                        <span style="font-size:0.78rem;font-weight:800;color:#0D5D31;">Telemetri Suhu &amp; Kelembapan (24 Jam)</span>
+                                        <span style="font-size:0.68rem;color:var(--text-secondary);background:#f1f5f9;padding:2px 8px;border-radius:10px;">24 Jam Terakhir</span>
+                                    </div>
+                                    <!-- High Precision SVG Chart Mockup -->
+                                    <svg viewBox="0 0 320 140" style="width:100%;height:130px;overflow:visible;">
+                                        <defs>
+                                            <linearGradient id="chartGrad1" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#10b981" stop-opacity="0.35" />
+                                                <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                                            </linearGradient>
+                                            <linearGradient id="chartGrad2" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25" />
+                                                <stop offset="100%" stop-color="#0284c7" stop-opacity="0.0" />
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Grid lines -->
+                                        <line x1="0" y1="20" x2="320" y2="20" stroke="#f1f5f9" stroke-dasharray="3,3" />
+                                        <line x1="0" y1="60" x2="320" y2="60" stroke="#f1f5f9" stroke-dasharray="3,3" />
+                                        <line x1="0" y1="100" x2="320" y2="100" stroke="#f1f5f9" stroke-dasharray="3,3" />
+
+                                        <!-- Area 2 (Humidity) -->
+                                        <path d="M0,90 Q40,40 80,75 T160,50 T240,65 T320,45 L320,130 L0,130 Z" fill="url(#chartGrad2)" />
+                                        <path d="M0,90 Q40,40 80,75 T160,50 T240,65 T320,45" fill="none" stroke="#0284c7" stroke-width="2.5" />
+
+                                        <!-- Area 1 (Temperature) -->
+                                        <path d="M0,110 Q40,80 80,95 T160,70 T240,85 T320,60 L320,130 L0,130 Z" fill="url(#chartGrad1)" />
+                                        <path d="M0,110 Q40,80 80,95 T160,70 T240,85 T320,60" fill="none" stroke="#10b981" stroke-width="2.5" />
+
+                                        <!-- Active data point highlight -->
+                                        <circle cx="160" cy="70" r="4" fill="#10b981" stroke="#fff" stroke-width="2" />
+                                    </svg>
+                                    <div style="display:flex;justify-content:center;gap:14px;margin-top:8px;font-size:0.7rem;color:var(--text-secondary);">
+                                        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#10b981;"></span> Suhu Udara (°C)</span>
+                                        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#0284c7;"></span> Kelembapan (%RH)</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Slide 3: Smart Alerts -->
+                    <!-- Slide 4: Smart Alerts -->
                     <div class="carousel-slide">
                         <div class="carousel-slide-content">
-                            <span class="carousel-badge" style="background: rgba(235, 80, 17, 0.12); color: #eb5011; border-color: rgba(235, 80, 17, 0.25);"><i data-lucide="bell-ring"></i> Fitur 03</span>
-                            <h3 class="carousel-slide-title">Notifikasi & Warning System</h3>
-                            <p class="carousel-slide-desc">Sistem deteksi dini yang langsung mengubah warna kartu dan menampilkan pesan peringatan saat parameter keluar dari ambang batas aman.</p>
+                            <span class="carousel-badge" style="background:rgba(235,80,17,0.12);color:#eb5011;border-color:rgba(235,80,17,0.25);"><i data-lucide="bell-ring"></i> Fitur 04</span>
+                            <h3 class="carousel-slide-title">Notifikasi &amp; Warning System Anti-Spam</h3>
+                            <p class="carousel-slide-desc">Sistem deteksi dini yang pintar menyaring lonjakan noise dengan 3x pengecekan database dan 5x notifikasi Web Push ke browser/smartphone.</p>
                             <ul class="carousel-feature-list">
                                 <li><i data-lucide="check-circle-2"></i> Peringatan cepat perubahan ekstrim cuaca</li>
-                                <li><i data-lucide="check-circle-2"></i> Indikator visual dengan kode warna ramah mata</li>
+                                <li><i data-lucide="check-circle-2"></i> Integrasi Web Push PWA &amp; WhatsApp Alert</li>
                                 <li><i data-lucide="check-circle-2"></i> Tindakan mitigasi cepat mencegah gagal panen</li>
                             </ul>
                             <a href="signup.php" class="btn btn-orange" style="align-self: flex-start;">Lihat System Alert</a>
@@ -504,38 +829,95 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                                     <span class="mockup-dot red"></span>
                                     <span class="mockup-dot yellow"></span>
                                     <span class="mockup-dot green"></span>
-                                    <span class="mockup-address">microclimeet.com/petani/alerts</span>
+                                    <span class="mockup-address">microclimeet.com/petani/index.php</span>
                                 </div>
-                                <div class="mockup-body">
-                                    <div class="preview-mini-card" style="background: rgba(235, 80, 17, 0.1); border-color: rgba(235, 80, 17, 0.3); margin-bottom: 12px;">
-                                        <div style="display: flex; align-items: center; gap: 8px; color: #eb5011; font-weight: 700; font-size: 0.9rem;">
-                                            <i data-lucide="alert-triangle"></i> PERINGATAN WASPADA
+                                <div class="mockup-body" style="background:#f8faf8;padding:16px;">
+                                    <!-- Mini Topbar Replica -->
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(0,0,0,0.06);">
+                                        <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:700;color:#0D5D31;">
+                                            <i class="bi bi-house-door-fill" style="color:#0D5D31;"></i> MCM_001_PTIK (ESP32_GH_001)
                                         </div>
-                                        <div style="font-size: 0.85rem; color: var(--text-primary); margin-top: 4px;">Suhu greenhouse mencapai 32.5°C (Melebihi ambang batas maks 30°C).</div>
+                                        <span style="font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:12px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;display:inline-flex;align-items:center;gap:4px;">
+                                            <span style="width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;"></span> 1 Peringatan Kritis
+                                        </span>
                                     </div>
-                                    <div class="preview-mini-card" style="background: rgba(255, 255, 255, 0.85);">
-                                        <div style="display: flex; align-items: center; gap: 8px; color: #55793a; font-weight: 700; font-size: 0.9rem;">
-                                            <i data-lucide="check-circle"></i> SENSOR LAINNYA AMAN
+
+                                    <!-- Emergency Alert Banner Replica -->
+                                    <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+                                        <i data-lucide="bell-ring" style="width:16px;height:16px;color:#dc2626;flex-shrink:0;"></i>
+                                        <div style="font-size:0.72rem;color:#7f1d1d;font-weight:700;line-height:1.3;">
+                                            🚨 Indeks UV mencapai 10.8 UV Index (Melebihi ambang batas maks 5.0 UV Index)!
                                         </div>
-                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">Kelembaban 72%, Kualitas Udara 15 AQI, UV 2.1.</div>
+                                    </div>
+
+                                    <!-- 4 Widget Cards Grid (Real Replica with Active Alert Card) -->
+                                    <div class="preview-widget-grid" style="grid-template-columns:repeat(2,1fr);gap:8px;">
+                                        <!-- Suhu Udara -->
+                                        <div class="preview-mini-card" style="background:#fff;border-radius:10px;padding:10px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                                                <span style="font-size:0.68rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Suhu Udara</span>
+                                                <i data-lucide="thermometer" style="width:12px;height:12px;color:#0D5D31;"></i>
+                                            </div>
+                                            <div style="font-size:1.15rem;font-weight:800;color:#0D5D31;line-height:1;">26.9 <span style="font-size:0.65rem;font-weight:600;">°C</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.64rem;">
+                                                <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:1px 5px;border-radius:6px;font-weight:700;">OPTIMAL</span>
+                                                <span style="color:var(--text-secondary);">Target: 20–30°C</span>
+                                            </div>
+                                        </div>
+                                        <!-- Kelembapan -->
+                                        <div class="preview-mini-card" style="background:#fff;border-radius:10px;padding:10px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                                                <span style="font-size:0.68rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Kelembapan</span>
+                                                <i data-lucide="droplets" style="width:12px;height:12px;color:#0284c7;"></i>
+                                            </div>
+                                            <div style="font-size:1.15rem;font-weight:800;color:#0284c7;line-height:1;">65.8 <span style="font-size:0.65rem;font-weight:600;">% RH</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.64rem;">
+                                                <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:1px 5px;border-radius:6px;font-weight:700;">OPTIMAL</span>
+                                                <span style="color:var(--text-secondary);">Target: 60–85%</span>
+                                            </div>
+                                        </div>
+                                        <!-- Kualitas Udara -->
+                                        <div class="preview-mini-card" style="background:#fff;border-radius:10px;padding:10px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                                                <span style="font-size:0.68rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Kualitas Udara</span>
+                                                <i data-lucide="wind" style="width:12px;height:12px;color:#16a34a;"></i>
+                                            </div>
+                                            <div style="font-size:1.15rem;font-weight:800;color:#16a34a;line-height:1;">35 <span style="font-size:0.65rem;font-weight:600;">PM2.5</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.64rem;">
+                                                <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:1px 5px;border-radius:6px;font-weight:700;">OPTIMAL</span>
+                                                <span style="color:var(--text-secondary);">Target: 0–40 PM2.5</span>
+                                            </div>
+                                        </div>
+                                        <!-- Indeks UV (DANGER ALERT STATE) -->
+                                        <div class="preview-mini-card" style="background:#fef2f2;border-radius:10px;padding:10px;border:1.5px solid #fca5a5;box-shadow:0 4px 12px rgba(239,68,68,0.15);">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                                                <span style="font-size:0.68rem;font-weight:800;color:#991b1b;text-transform:uppercase;">Indeks UV</span>
+                                                <i data-lucide="sun" style="width:12px;height:12px;color:#dc2626;"></i>
+                                            </div>
+                                            <div style="font-size:1.15rem;font-weight:800;color:#dc2626;line-height:1;">10.8 <span style="font-size:0.65rem;font-weight:600;">UV Index</span></div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.64rem;">
+                                                <span style="background:rgba(239,68,68,0.2);color:#b91c1c;padding:1px 5px;border-radius:6px;font-weight:800;">KRITIS</span>
+                                                <span style="color:#7f1d1d;font-weight:600;">Target: 0–5 UV</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Slide 4: Admin Control -->
+                    <!-- Slide 5: Ambang Batas (Threshold) & Kalibrasi Presisi (FITUR BARU) -->
                     <div class="carousel-slide">
                         <div class="carousel-slide-content">
-                            <span class="carousel-badge" style="background: rgba(37, 99, 235, 0.12); color: #2563eb; border-color: rgba(37, 99, 235, 0.25);"><i data-lucide="shield-check"></i> Fitur 04</span>
-                            <h3 class="carousel-slide-title">Panel Admin & Threshold Control</h3>
-                            <p class="carousel-slide-desc">Pusat kendali admin untuk menyetujui registrasi petani baru, memantau log aktivitas pengguna, dan mengonfigurasi batas sensor global.</p>
+                            <span class="carousel-badge" style="background:rgba(37,99,235,0.12);color:#2563eb;border-color:rgba(37,99,235,0.25);"><i data-lucide="sliders"></i> Fitur 05</span>
+                            <h3 class="carousel-slide-title">Ambang Batas &amp; Kalibrasi Custom</h3>
+                            <p class="carousel-slide-desc">Konfigurasi batas aman sensor (min-max) kustom per greenhouse dan fitur kalibrasi offset presisi untuk hasil pemantauan terpercaya.</p>
                             <ul class="carousel-feature-list">
-                                <li><i data-lucide="check-circle-2"></i> Approval registrasi petani satu klik</li>
-                                <li><i data-lucide="check-circle-2"></i> Log aktivitas audit trail pengguna</li>
-                                <li><i data-lucide="check-circle-2"></i> Kalibrasi threshold global terpusat</li>
+                                <li><i data-lucide="check-circle-2"></i> Custom threshold spesifik per greenhouse / komoditas</li>
+                                <li><i data-lucide="check-circle-2"></i> Kalibrasi offset sensor suhu, kelembapan, AQI &amp; UV</li>
+                                <li><i data-lucide="check-circle-2"></i> Preset otomatis tanaman premium (Melon, Tomat, dll.)</li>
                             </ul>
-                            <a href="login.php" class="btn btn-secondary" style="align-self: flex-start;">Akses Login Admin</a>
+                            <a href="signup.php" class="btn btn-primary" style="align-self: flex-start;">Atur Threshold Custom</a>
                         </div>
                         <div class="carousel-slide-visual">
                             <div class="mockup-window">
@@ -543,16 +925,30 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                                     <span class="mockup-dot red"></span>
                                     <span class="mockup-dot yellow"></span>
                                     <span class="mockup-dot green"></span>
-                                    <span class="mockup-address">microclimeet.com/admin/overview</span>
+                                    <span class="mockup-address">microclimeet.com/admin/thresholds.php</span>
                                 </div>
-                                <div class="mockup-body">
-                                    <div class="preview-mini-card" style="margin-bottom: 8px;">
-                                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary);">Persetujuan Petani (2 Pending)</div>
-                                        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Pak Budi - b.sutrisno@gmail.com</div>
+                                <div class="mockup-body" style="background:#f8faf8;padding:16px;">
+                                    <div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid rgba(0,0,0,0.08);margin-bottom:8px;">
+                                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">
+                                            <span>Suhu Udara</span>
+                                            <span style="color:#0D5D31;">20.00°C – 30.00°C</span>
+                                        </div>
+                                        <div style="height:6px;background:#e2e8f0;border-radius:6px;overflow:hidden;position:relative;">
+                                            <div style="position:absolute;left:25%;width:50%;height:100%;background:#0D5D31;border-radius:6px;"></div>
+                                        </div>
                                     </div>
-                                    <div class="preview-mini-card">
-                                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary);">System Log Activity</div>
-                                        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Admin memperbarui threshold suhu max = 30.00°C</div>
+                                    <div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid rgba(0,0,0,0.08);margin-bottom:8px;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">
+                                            <span>Kelembapan</span>
+                                            <span style="color:#0284c7;">60.00% – 85.00%</span>
+                                        </div>
+                                        <div style="height:6px;background:#e2e8f0;border-radius:6px;overflow:hidden;position:relative;">
+                                            <div style="position:absolute;left:40%;width:45%;height:100%;background:#0284c7;border-radius:6px;"></div>
+                                        </div>
+                                    </div>
+                                    <div style="background:rgba(13,93,49,0.06);border-radius:10px;padding:8px 12px;border:1px solid rgba(13,93,49,0.15);font-size:0.72rem;color:#0D5D31;display:flex;align-items:center;justify-content:space-between;">
+                                        <span><i data-lucide="sliders" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i> Offset Kalibrasi Suhu: <strong>+0.20°C</strong></span>
+                                        <span style="font-weight:800;color:#15803d;">Active</span>
                                     </div>
                                 </div>
                             </div>
@@ -569,6 +965,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                     <button class="carousel-dot" aria-label="Slide 2"></button>
                     <button class="carousel-dot" aria-label="Slide 3"></button>
                     <button class="carousel-dot" aria-label="Slide 4"></button>
+                    <button class="carousel-dot" aria-label="Slide 5"></button>
                 </div>
 
                 <div class="carousel-arrow-group">
@@ -584,6 +981,11 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
     </div>
 </section>
 
+</div>
+</div>
+</div>
+</section>
+
 <!-- Pricing Section -->
 <section id="harga" class="section-wrapper reveal">
     <div class="section-header">
@@ -591,7 +993,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
         <h2 class="section-title">Harga yang Transparan <em>dan Terjangkau</em></h2>
         <p class="section-desc">Mulai demokratisasi teknologi pertanian Anda secara bertahap sesuai dengan skala usaha Anda.</p>
     </div>
-    
+
     <div class="pricing-grid">
         <!-- Paket 1 -->
         <div class="glass-card price-card">
@@ -607,7 +1009,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                 <li class="unavailable"><i data-lucide="x" style="color: var(--danger-color);"></i> Website Dashboard Monitoring</li>
                 <li class="unavailable"><i data-lucide="x" style="color: var(--danger-color);"></i> Notifikasi Peringatan Bahaya</li>
             </ul>
-            <a href="https://wa.me/6281234567890?text=Halo%20Admin%20MicroClimeet,%20saya%20ingin%20memesan%20Paket%20Alat%20Mandiri." target="_blank" class="btn btn-secondary" style="width: 100%;">Pesan Sekarang</a>
+            <a href="https://wa.me/6283829634058?text=Halo%20Admin%20MicroClimeet,%20saya%20ingin%20memesan%20Paket%20Alat%20Mandiri." target="_blank" class="btn btn-secondary" style="width: 100%;">Pesan Sekarang</a>
         </div>
 
         <!-- Paket 2 (Featured) -->
@@ -626,7 +1028,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                 <li><i data-lucide="check" style="color: var(--accent-color);"></i> Notifikasi Peringatan via Web</li>
                 <li><i data-lucide="check" style="color: var(--accent-color);"></i> Histori Grafik Data Tren</li>
             </ul>
-            <a href="https://wa.me/6281234567890?text=Halo%20Admin%20MicroClimeet,%20saya%20ingin%20memesan%20Paket%20Lengkap%20Alat%20+%20Instalasi%20+%20Website%20Monitoring." target="_blank" class="btn btn-orange" style="width: 100%;">Pesan Paket Lengkap</a>
+            <a href="https://wa.me/6283829634058?text=Halo%20Admin%20MicroClimeet,%20saya%20ingin%20memesan%20Paket%20Lengkap%20Alat%20+%20Instalasi%20+%20Website%20Monitoring." target="_blank" class="btn btn-orange" style="width: 100%;">Pesan Paket Lengkap</a>
         </div>
 
         <!-- Paket 3 -->
@@ -643,10 +1045,81 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
                 <li class="unavailable"><i data-lucide="x" style="color: var(--danger-color);"></i> Website Dashboard Monitoring</li>
                 <li class="unavailable"><i data-lucide="x" style="color: var(--danger-color);"></i> Notifikasi Peringatan Jarak Jauh</li>
             </ul>
-            <a href="https://wa.me/6281234567890?text=Halo%20Admin%20MicroClimeet,%20saya%20ingin%20memesan%20Paket%20Alat%20+%20Pemasangan." target="_blank" class="btn btn-secondary" style="width: 100%;">Pesan Sekarang</a>
+            <a href="https://wa.me/6283829634058?text=Halo%20Admin%20MicroClimeet,%20saya%20ingin%20memesan%20Paket%20Alat%20+%20Pemasangan." target="_blank" class="btn btn-secondary" style="width: 100%;">Pesan Sekarang</a>
         </div>
     </div>
 </section>
+
+<!-- Interactive FAQ Section -->
+<section id="faq" class="section-wrapper reveal">
+    <div class="section-header">
+        <span class="section-tag"><i data-lucide="help-circle"></i> Tanya Jawab</span>
+        <h2 class="section-title">Pertanyaan Sering <em>Diajukan (FAQ)</em></h2>
+        <p class="section-desc">Temukan jawaban cepat atas pertanyaan seputar penggunaan, garansi, dan instalasi MicroClimeet.</p>
+    </div>
+
+    <div style="max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;">
+        <!-- FAQ 1 -->
+        <div class="glass-card" style="border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.06);">
+            <button type="button" onclick="toggleFaq(this)" style="width: 100%; padding: 18px 20px; text-align: left; background: transparent; border: none; font-family: var(--font-heading); font-weight: 800; font-size: 1rem; color: #0D5D31; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <span> Apakah perangkat MicroClimeet mudah dipasang di greenhouse?</span>
+                <i data-lucide="chevron-down" class="faq-icon" style="transition: transform 0.3s ease; color: var(--text-secondary);"></i>
+            </button>
+            <div class="faq-body" style="display: none; padding: 0 20px 18px 20px; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; border-top: 1px dashed rgba(0,0,0,0.06); padding-top: 12px;">
+                Sangat mudah! Alat dirancang *Plug &amp; Play*. Anda cukup memasang unit alat di tiang greenhouse dan menghubungkannya ke sumber listrik/panel surya serta koneksi Wi-Fi. Jika memesan Paket Lengkap, tim kami siap datang menginstalasi langsung ke lokasi Anda.
+            </div>
+        </div>
+
+        <!-- FAQ 2 -->
+        <div class="glass-card" style="border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.06);">
+            <button type="button" onclick="toggleFaq(this)" style="width: 100%; padding: 18px 20px; text-align: left; background: transparent; border: none; font-family: var(--font-heading); font-weight: 800; font-size: 1rem; color: #0D5D31; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <span> Bagaimana jika sinyal Wi-Fi di greenhouse kurang stabil?</span>
+                <i data-lucide="chevron-down" class="faq-icon" style="transition: transform 0.3s ease; color: var(--text-secondary);"></i>
+            </button>
+            <div class="faq-body" style="display: none; padding: 0 20px 18px 20px; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; border-top: 1px dashed rgba(0,0,0,0.06); padding-top: 12px;">
+                MicroClimeet dilengkapi dengan **Layar OLED Fisik 0.96 Inch** pada unit alat hardware. Jadi meskipun Wi-Fi terputus sementara, data suhu, kelembapan, PM2.5, dan UV tetap tampil secara offline pada layar fisik alat.
+            </div>
+        </div>
+
+        <!-- FAQ 3 -->
+        <div class="glass-card" style="border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.06);">
+            <button type="button" onclick="toggleFaq(this)" style="width: 100%; padding: 18px 20px; text-align: left; background: transparent; border: none; font-family: var(--font-heading); font-weight: 800; font-size: 1rem; color: #0D5D31; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <span> Apakah ada garansi hardware dan dukungan layanan pelanggan?</span>
+                <i data-lucide="chevron-down" class="faq-icon" style="transition: transform 0.3s ease; color: var(--text-secondary);"></i>
+            </button>
+            <div class="faq-body" style="display: none; padding: 0 20px 18px 20px; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; border-top: 1px dashed rgba(0,0,0,0.06); padding-top: 12px;">
+                Ya, setiap pembelian unit mendapatkan **Garansi Resmi 1 Tahun** dan layanan bantuan teknis tim pengembang via WhatsApp Admin.
+            </div>
+        </div>
+
+        <!-- FAQ 4 -->
+        <div class="glass-card" style="border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.06);">
+            <button type="button" onclick="toggleFaq(this)" style="width: 100%; padding: 18px 20px; text-align: left; background: transparent; border: none; font-family: var(--font-heading); font-weight: 800; font-size: 1rem; color: #0D5D31; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <span> Bisakah saya mengatur ambang batas (threshold) suhu sesuai kebutuhan tanaman saya?</span>
+                <i data-lucide="chevron-down" class="faq-icon" style="transition: transform 0.3s ease; color: var(--text-secondary);"></i>
+            </button>
+            <div class="faq-body" style="display: none; padding: 0 20px 18px 20px; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; border-top: 1px dashed rgba(0,0,0,0.06); padding-top: 12px;">
+                Tentu saja! Melalui dashboard web MicroClimeet, Anda memiliki akses penuh untuk mengatur nilai batas minimum &amp; maksimum suhu, kelembapan, AQI, dan UV sesuai spesifikasi varietas tanaman yang Anda budidayakan.
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function toggleFaq(btn) {
+        const body = btn.nextElementSibling;
+        const icon = btn.querySelector('.faq-icon');
+        const isOpen = body.style.display === 'block';
+
+        document.querySelectorAll('.faq-body').forEach(b => b.style.display = 'none');
+        document.querySelectorAll('.faq-icon').forEach(i => i.style.transform = 'rotate(0deg)');
+
+        if (!isOpen) {
+            body.style.display = 'block';
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        }
+    }
+</script>
 
 <!-- Team / Tentang Kami Section -->
 <section id="tentang" class="section-wrapper reveal">
@@ -740,7 +1213,7 @@ $dashboard_url = ($user_role === 'admin') ? 'admin/index.php' : 'petani/index.ph
             <ul class="footer-links">
                 <li><i data-lucide="map-pin" style="display: inline-block; vertical-align: middle; height: 16px;"></i> FKIP JPTK UNS Kampus V, Surakarta</li>
                 <li><i data-lucide="mail" style="display: inline-block; vertical-align: middle; height: 16px;"></i> microclimeet123@gmail.com</li>
-                <li><i data-lucide="phone" style="display: inline-block; vertical-align: middle; height: 16px;"></i> +62 82135986515</li>
+                <li><i data-lucide="phone" style="display: inline-block; vertical-align: middle; height: 16px;"></i> +62 83829634058</li>
             </ul>
         </div>
         <div class="footer-maps-column">

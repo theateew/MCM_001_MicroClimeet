@@ -49,8 +49,15 @@ $uv          = isset($payload['uv'])          ? (float)$payload['uv']          :
 
 // ── Simpan ke telemetry_logs ─────────────────────────────────
 try {
+    $cols = $pdo->query("DESCRIBE telemetry_logs")->fetchAll(PDO::FETCH_COLUMN);
+    $hasDeviceId = in_array('device_id', $cols);
+    $hasUvIndex  = in_array('uv_index', $cols);
+
+    $idField = $hasDeviceId ? 'device_id' : 'greenhouse_id';
+    $uvField = $hasUvIndex ? 'uv_index' : 'uv';
+
     $ins = $pdo->prepare(
-        "INSERT INTO telemetry_logs (greenhouse_id, temperature, humidity, air_quality, uv)
+        "INSERT INTO telemetry_logs ($idField, temperature, humidity, air_quality, $uvField)
          VALUES (?, ?, ?, ?, ?)"
     );
     $ins->execute([$greenhouse_id, $temperature, $humidity, $air_quality, $uv]);

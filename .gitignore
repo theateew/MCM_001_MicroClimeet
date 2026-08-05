@@ -1,0 +1,31 @@
+# ============================================================
+# MicroClimeet — .gitignore
+# ============================================================
+
+# === UPLOADS USER (File besar & data pribadi) ===
+uploads/profiles/*
+!uploads/profiles/.gitkeep
+uploads/greenhouses/*
+!uploads/greenhouses/.gitkeep
+
+# === GAMBAR BACKGROUND BESAR (>5MB) ===
+assets/images/backgrounds/melonbg.png
+
+# === SCREENSHOT BERANTAKAN ===
+assets/images/screenshots/
+
+# === SCRIPT BERBAHAYA (Reset DB) ===
+config/reset_all_users.php
+
+# === FILE DEVELOPMENT LOKAL ===
+implementation_plan.md
+
+# === SISTEM ===
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.cache
+
+# === PHP DEPENDENCY (jika pakai composer) ===
+vendor/

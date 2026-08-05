@@ -43,6 +43,19 @@ if ($action === 'unsubscribe') {
     exit;
 }
 
+if ($action === 'test') {
+    require_once __DIR__ . '/../includes/notifications.php';
+    sendWebPush(
+        $pdo,
+        $user_id,
+        '🔔 Uji Web Push MicroClimeet',
+        'Notifikasi browser berfungsi dengan baik! Sistem siap menerima peringatan sensor.',
+        '/petani/alerts.php'
+    );
+    echo json_encode(['success' => true, 'message' => 'Notifikasi uji coba berhasil diproses!']);
+    exit;
+}
+
 // Subscribe: upsert (jika endpoint sudah ada, update)
 if (empty($endpoint) || empty($p256dh) || empty($authKey)) {
     http_response_code(400);

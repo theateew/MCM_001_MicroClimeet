@@ -184,10 +184,10 @@ function checkAndTriggerAlerts(
 
         if ($value < $min) {
             $type = 'below_min';
-            $msg  = "⚠️ {$label} terlalu rendah: {$value}{$unit} (min: {$min}{$unit})";
+            $msg  = "{$label} terlalu rendah: {$value}{$unit} (min: {$min}{$unit})";
         } elseif ($value > $max) {
             $type = 'above_max';
-            $msg  = "🚨 {$label} terlalu tinggi: {$value}{$unit} (maks: {$max}{$unit})";
+            $msg  = "{$label} terlalu tinggi: {$value}{$unit} (maks: {$max}{$unit})";
         }
 
         if ($type === null) continue;

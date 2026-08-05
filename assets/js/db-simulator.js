@@ -78,7 +78,7 @@ class TelemetrySimulator {
 
     evaluateStatus(sensorType, value) {
         const threshold = this.thresholds[sensorType];
-        if (!threshold) return { text: 'NORMAL', class: 'badge-success' };
+        if (!threshold) return { text: 'OPTIMAL', class: 'badge-success', level: 'optimal' };
 
         const val = parseFloat(value);
         const min = parseFloat(threshold.min);
@@ -88,18 +88,18 @@ class TelemetrySimulator {
             // Under threshold alert
             const diff = min - val;
             if (diff > min * 0.2) {
-                return { text: 'BAHAYA (RENDAH)', class: 'badge-danger' };
+                return { text: 'KRITIS', class: 'badge-danger', level: 'danger' };
             }
-            return { text: 'WASPADA', class: 'badge-warning' };
+            return { text: 'PERINGATAN', class: 'badge-warning', level: 'warning' };
         } else if (val > max) {
             // Over threshold alert
             const diff = val - max;
             if (diff > max * 0.2) {
-                return { text: 'BAHAYA (TINGGI)', class: 'badge-danger' };
+                return { text: 'KRITIS', class: 'badge-danger', level: 'danger' };
             }
-            return { text: 'WASPADA', class: 'badge-warning' };
+            return { text: 'PERINGATAN', class: 'badge-warning', level: 'warning' };
         }
 
-        return { text: 'NORMAL', class: 'badge-success' };
+        return { text: 'OPTIMAL', class: 'badge-success', level: 'optimal' };
     }
 }
