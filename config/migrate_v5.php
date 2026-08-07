@@ -33,6 +33,13 @@ try {
         echo "<p style='color:blue;'>ℹ Column 'two_factor_enabled' already exists.</p>";
     }
 
+    if (!in_array('photo', $columns)) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN photo VARCHAR(255) NULL AFTER phone");
+        echo "<p style='color:green;'>✓ Added column 'photo' to users table.</p>";
+    } else {
+        echo "<p style='color:blue;'>ℹ Column 'photo' already exists.</p>";
+    }
+
     // 2. Create email_verifications table for 6-digit OTP codes
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS email_verifications (
